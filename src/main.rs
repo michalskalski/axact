@@ -8,6 +8,7 @@ use axum::{
     routing::get,
     Router, Server,
 };
+use clap::Parser;
 use sysinfo::{CpuExt, System, SystemExt};
 use tokio::sync::broadcast;
 
@@ -15,6 +16,7 @@ type Snapshot = Vec<f32>;
 
 #[tokio::main]
 async fn main() {
+    let args = Args::parse();
     let (tx, _) = broadcast::channel::<Snapshot>(1);
 
     tracing_subscriber::fmt::init();
@@ -39,11 +41,25 @@ async fn main() {
         }
     });
 
-    let server = Server::bind(&"0.0.0.0:7032".parse().unwrap()).serve(router.into_make_service());
+    let addr = format!("{}:{}", args.address, args.port);
+
+    let server = Server::bind(&addr.parse().unwrap()).serve(router.into_make_service());
     let addr = server.local_addr();
     println!("Listening on {addr}");
 
     server.await.unwrap();
+}
+
+/// Show current host cpu usage as web page
+#[derive(Parser, Debug)]
+struct Args {
+    /// Address to listen on
+    #[arg(short, long, default_value_t = String::from("127.0.0.1"))]
+    address: String,
+
+    /// Port to listen on
+    #[arg(short, long, default_value_t = 8799)]
+    port: u16,
 }
 
 #[derive(Clone)]
@@ -53,15 +69,11 @@ struct AppState {
 
 #[axum::debug_handler]
 async fn root_get() -> impl IntoResponse {
-    //let markup = tokio::fs::read_to_string("src/index.html").await.unwrap();
     Html(include_str!("index.html"))
-
-    //Html(markup)
 }
 
 #[axum::debug_handler]
 async fn indexmjs_get() -> impl IntoResponse {
-    //let markup = tokio::fs::read_to_string("src/index.mjs").await.unwrap();
     let markup = include_str!("index.mjs").to_owned();
 
     Response::builder()
@@ -72,7 +84,7 @@ async fn indexmjs_get() -> impl IntoResponse {
 
 #[axum::debug_handler]
 async fn indexcss_get() -> impl IntoResponse {
-    let markup = tokio::fs::read_to_string("src/index.css").await.unwrap();
+    let markup = include_str!("index.css").to_owned();
 
     Response::builder()
         .header("content-type", "text/css;charset=utf-8")
