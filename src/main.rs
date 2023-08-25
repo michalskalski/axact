@@ -53,14 +53,16 @@ struct AppState {
 
 #[axum::debug_handler]
 async fn root_get() -> impl IntoResponse {
-    let markup = tokio::fs::read_to_string("src/index.html").await.unwrap();
+    //let markup = tokio::fs::read_to_string("src/index.html").await.unwrap();
+    Html(include_str!("index.html"))
 
-    Html(markup)
+    //Html(markup)
 }
 
 #[axum::debug_handler]
 async fn indexmjs_get() -> impl IntoResponse {
-    let markup = tokio::fs::read_to_string("src/index.mjs").await.unwrap();
+    //let markup = tokio::fs::read_to_string("src/index.mjs").await.unwrap();
+    let markup = include_str!("index.mjs").to_owned();
 
     Response::builder()
         .header("content-type", "application/javascript;charset=utf-8")
